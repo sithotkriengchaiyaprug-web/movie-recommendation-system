@@ -1,52 +1,69 @@
-// js/home.js
-document.addEventListener('DOMContentLoaded', async () => {
-    await checkConnection();
-    await loadStats();
-});
+// 1. เก็บตัวแปรเก็บหนังที่ถูกเลือก (ของผม) ไว้ด้านบน
+let selectedMovies = [];
 
-async function checkConnection() {
-    const statusEl = document.getElementById('connStatus');
-    const textEl = document.getElementById('connText');
+// 2. ฟังก์ชันคลิกเลือกหนัง (ของผม) ก๊อปมาวางไว้เลย
+function toggleMovie(movieId, movieTitle, cardElement) {
+    const index = selectedMovies.indexOf(movieId);
+    const imgElement = cardElement.querySelector('img');
+
+    if (index === -1) {
+        selectedMovies.push(movieId);
+        imgElement.style.border = "4px solid #E50914"; 
+        imgElement.style.opacity = "0.7";
+        cardElement.style.transform = "scale(0.95)";
+    } else {
+        selectedMovies.splice(index, 1);
+        imgElement.style.border = "none";
+        imgElement.style.opacity = "1";
+        cardElement.style.transform = "scale(1)";
+    }
+    console.log("👉 หนังที่รอคัดกรอง (พร้อมส่ง API):", selectedMovies);
+}
+
+// ==========================================
+// 3. รวมร่าง! เอาโค้ดดึง API เก่าของคุณ มาผสมกับโค้ดสร้างกล่องของผม
+// ==========================================
+async function loadMoviesFromBackend() {
+    const container = document.getElementById('movieListContainer');
+    container.innerHTML = '<p>กำลังโหลดข้อมูลหนังจาก Database...</p>';
 
     try {
-        const connected = await testConnection();
-        if (connected) {
-            statusEl.className = 'connection-status status-connected';
-            textEl.textContent = 'Connected';
-            showToast('เชื่อมต่อ Backend สำเร็จ ✅', 'success');
-        } else {
-            throw new Error('fail');
-        }
-    } catch {
-        statusEl.className = 'connection-status status-disconnected';
-        textEl.textContent = 'Disconnected';
-        showToast('เชื่อมต่อ Backend ไม่ได้ ❌ — ตรวจสอบว่า Backend รันอยู่', 'error');
+        // 🟢 ตรงนี้คือ "โค้ดเก่าของคุณ" ที่ดึงข้อมูลจาก API จริงๆ
+        const response = await fetch('http://localhost:3000/api/movies'); // ลิงก์ API เก่าของคุณ
+        const realMoviesData = await response.json();
+        
+        container.innerHTML = ''; // โหลดเสร็จ ลบข้อความทิ้ง
+
+        // 🟢 เอาข้อมูลจริง มาวนลูปใส่ "กล่อง UI สวยๆ ของผม"
+        realMoviesData.forEach(movie => {
+            const card = document.createElement('div');
+            card.className = 'poster-card'; 
+            card.id = `movie-${movie.id}`;
+            card.style.padding = '0';
+            card.style.backgroundColor = 'transparent';
+            card.style.border = 'none';
+
+            // หมายเหตุ: เช็คชื่อตัวแปรรูปภาพให้ตรงกับ Database ของคุณ (เช่น movie.poster, movie.image_url)
+            // ถ้า DB เก่าไม่มีรูปลิงก์รูป ให้ใส่รูปจำลองไปก่อนได้ครับ
+            const imageUrl = movie.image_url || "https://via.placeholder.com/200x300?text=No+Image";
+
+            card.innerHTML = `
+                <img src="${imageUrl}" alt="${movie.title}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">
+            `;
+
+            // ผูกระบบคลิกเข้ากับหนังที่ดึงมาจาก DB จริงๆ
+            card.onclick = () => toggleMovie(movie.id, movie.title, card);
+
+            container.appendChild(card);
+        });
+
+    } catch (error) {
+        console.error("โหลดข้อมูลไม่สำเร็จ:", error);
+        container.innerHTML = '<p>เกิดข้อผิดพลาดในการดึงข้อมูล</p>';
     }
 }
 
-async function loadStats() {
-    try {
-        const stats = await getStats();
-        document.getElementById('totalUsers').textContent = stats.users;
-        document.getElementById('totalMovies').textContent = stats.movies;
-        document.getElementById('totalWatched').textContent = stats.watched;
-        document.getElementById('totalLiked').textContent = stats.liked;
-    } catch {
-        ['totalUsers', 'totalMovies', 'totalWatched', 'totalLiked']
-            .forEach(id => document.getElementById(id).textContent = '0');
-    }
-}
-
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toastContainer');
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
-    toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span> ${message}`;
-    container.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
-
-function toggleMenu() {
-    document.getElementById('navLinks').classList.toggle('open');
-}
+// 4. สั่งโหลดเมื่อเปิดหน้าเว็บ
+document.addEventListener("DOMContentLoaded", () => {
+    loadMoviesFromBackend();
+}); 

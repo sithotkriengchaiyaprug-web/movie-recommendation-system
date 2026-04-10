@@ -1,134 +1,223 @@
 <!DOCTYPE html>
-<html lang="th">
-
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎬 Movie Recommendation System</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
+    <title>MovieRec — Discover Your Next Favorite Movie</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ========== CSS VARIABLES & RESET ========== */
+        :root {
+            --bg-color: #141414;
+            --text-color: #e5e5e5;
+            --primary-red: #E50914;
+            --nav-bg: transparent;
+            --transition: 0.3s ease-in-out;
+        }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); overflow-x: hidden; }
+
+        /* ========== NAVBAR ========== */
+        .navbar {
+            position: fixed; top: 0; width: 100%; height: 70px; padding: 0 4%;
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: var(--nav-bg); transition: background-color var(--transition); z-index: 1000;
+        }
+        .navbar.scrolled { background-color: #141414; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .nav-left, .nav-right { display: flex; align-items: center; gap: 20px; }
+        .logo-text { color: var(--primary-red); font-size: 1.8rem; font-weight: 700; letter-spacing: 1px; text-decoration: none; }
+        .nav-links { display: flex; list-style: none; gap: 20px; margin-left: 20px; }
+        .nav-links a { color: #e5e5e5; text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+        .nav-links a:hover, .nav-links a.active { color: white; font-weight: 600; }
+        
+        /* เปลี่ยนจากรูปภาพ เป็นกล่องสีเทาสำหรับ Profile */
+        .profile-avatar-placeholder { 
+            width: 35px; height: 35px; border-radius: 4px; background-color: #333; 
+            display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 1.2rem;
+        }
+
+        /* ========== HERO SECTION ========== */
+        .hero {
+            position: relative; height: 85vh; background-color: #222; /* พื้นหลังสีเทาเข้ม รอ Backend ใส่รูป */
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .hero-content { padding-left: 4%; width: 50%; z-index: 10; }
+        .hero-title { font-size: 4rem; font-weight: 800; margin-bottom: 1rem; line-height: 1.1; color: white; }
+        .hero-meta { display: flex; gap: 15px; font-size: 1rem; font-weight: 500; margin-bottom: 1rem; align-items: center; color: #ccc;}
+        .hero-description { font-size: 1.1rem; line-height: 1.5; margin-bottom: 1.5rem; max-width: 600px; color: #aaa; }
+        .hero-buttons { display: flex; gap: 1rem; }
+        .btn { display: flex; align-items: center; gap: 8px; padding: 0.6rem 1.5rem; font-size: 1.1rem; font-weight: 600; border-radius: 4px; border: none; cursor: pointer; }
+        .btn-play { background-color: white; color: black; }
+        .btn-info { background-color: rgba(109, 109, 110, 0.7); color: white; }
+        .hero-fade-bottom { position: absolute; bottom: 0; width: 100%; height: 150px; background: linear-gradient(to top, var(--bg-color), transparent); }
+
+        /* ========== CONTENT ROWS ========== */
+        .main-content { padding: 0 4%; margin-top: -80px; position: relative; z-index: 10; }
+        .movie-row { margin-bottom: 3vw; }
+        .row-title { font-size: 1.2vw; font-weight: 600; margin-bottom: 0.5rem; }
+        .row-container { position: relative; }
+        .row-posters { display: flex; overflow-x: auto; overflow-y: hidden; gap: 10px; padding: 20px 0; scroll-behavior: smooth; }
+        .row-posters::-webkit-scrollbar { display: none; }
+        
+        /* กล่องหนังจำลอง (Placeholder) */
+        .poster-card { 
+            min-width: 200px; height: 300px; background-color: #333; border: 1px solid #444; border-radius: 4px; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+            cursor: pointer; transition: transform 0.3s ease; flex-shrink: 0; padding: 10px;
+        }
+        .poster-card:hover { transform: scale(1.08); background-color: #444; z-index: 5; }
+        .poster-card-title { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 5px;}
+        .poster-card-sub { font-size: 0.8rem; color: #888;}
+
+        /* Carousel Arrows */
+        .slider-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: white; font-size: 2rem; height: 100%; width: 40px; cursor: pointer; z-index: 10; opacity: 0; transition: opacity 0.2s; }
+        .row-container:hover .slider-arrow { opacity: 1; }
+        .left-arrow { left: -40px; }
+        .right-arrow { right: -40px; }
+
+        /* ========== MODAL ========== */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background-color: var(--bg-color); width: 800px; max-width: 90%; border-radius: 10px; overflow: hidden; position: relative; }
+        .modal-hero { height: 350px; background-color: #333; position: relative; display: flex; justify-content: center; align-items: center; color: #666;}
+        .modal-hero-fade { position: absolute; bottom: 0; width: 100%; height: 100px; background: linear-gradient(to top, var(--bg-color), transparent); }
+        .modal-close { position: absolute; top: 20px; right: 20px; background: rgba(20,20,20,0.6); border: none; border-radius: 50%; color: white; font-size: 1.2rem; width: 35px; height: 35px; cursor: pointer; z-index: 10; }
+        .modal-body { padding: 30px; }
+    </style>
+</head>
 <body>
 
-    <!-- Navbar -->
-    <nav class="navbar">
-        <div class="navbar-inner">
-            <a href="index.html" class="navbar-brand">
-                <span>🎬</span> MovieRec
+    <!-- ========== NAVBAR ========== -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-left">
+            <a href="index.html" class="nav-logo">
+                <span class="logo-text">MOVIEREC</span>
             </a>
-            <button class="menu-toggle" onclick="toggleMenu()">☰</button>
-            <ul class="navbar-links" id="navLinks">
-                <li><a href="index.html" class="active">🏠 Home</a></li>
-                <li><a href="users.html">👤 Users</a></li>
-                <li><a href="movies.html">🎬 Movies</a></li>
-                <li><a href="recommend.html">📊 Recommend</a></li>
+            <ul class="nav-links">
+                <li><a href="index.html" class="active">Home</a></li>
+                <li><a href="users.html">Users</a></li>
+                <li><a href="movies.html">Movies</a></li>
+                <li><a href="recommend.html">Recommend</a></li>
             </ul>
-            <div class="connection-status status-disconnected" id="connStatus">
-                <span class="status-dot"></span>
-                <span id="connText">Checking...</span>
+        </div>
+        <div class="nav-right">
+            <div class="search-box">
+                <span class="icon">🔍</span>
+            </div>
+            <div class="profile-menu">
+                <!-- ใช้เป็นไอคอนแทนรูปภาพ -->
+                <div class="profile-avatar-placeholder">👤</div>
             </div>
         </div>
     </nav>
 
-    <!-- Main -->
-    <main class="container">
-
-        <!-- Hero -->
-        <section class="hero">
-            <h1>🎬 Movie Recommendation System</h1>
-            <p>
-                ระบบแนะนำหนังอัจฉริยะ ใช้ Neo4j Graph Database
-                วิเคราะห์ความสัมพันธ์ระหว่างผู้ใช้และหนัง
+    <!-- ========== HERO SECTION ========== -->
+    <header class="hero" id="heroSection">
+        <div class="hero-content">
+            <h1 class="hero-title" id="heroTitle">[Movie Title]</h1>
+            <div class="hero-meta" id="heroMeta">
+                <span>[Year]</span>
+                <span>|</span>
+                <span>[Genre]</span>
+            </div>
+            <p class="hero-description" id="heroDesc">
+                [Movie Description Placeholder] - ข้อมูลตรงนี้รอให้ Backend ส่ง API มาแสดงผลแทนที่ข้อความนี้
             </p>
-            <div class="hero-actions">
-                <a href="recommend.html" class="btn btn-primary btn-lg">📊 เริ่มใช้งาน</a>
-                <a href="users.html" class="btn btn-outline btn-lg">👤 จัดการ Users</a>
+            <div class="hero-buttons">
+                <button class="btn btn-play" id="heroPlayBtn">
+                    <span>▶</span> Play
+                </button>
+                <button class="btn btn-info" id="heroInfoBtn" onclick="openModal()">
+                    <span>ⓘ</span> More Info
+                </button>
             </div>
-        </section>
+        </div>
+        <div class="hero-fade-bottom"></div>
+    </header>
 
-        <!-- Stats -->
-        <section class="section">
-            <h2 class="section-title">📈 สถิติระบบ</h2>
-            <div class="grid-4">
-                <div class="stat-card">
-                    <div class="stat-icon">👤</div>
-                    <div class="stat-number" id="totalUsers">-</div>
-                    <div class="stat-label">Users</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">🎬</div>
-                    <div class="stat-number" id="totalMovies">-</div>
-                    <div class="stat-label">Movies</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">👁️</div>
-                    <div class="stat-number" id="totalWatched">-</div>
-                    <div class="stat-label">Watched</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">❤️</div>
-                    <div class="stat-number" id="totalLiked">-</div>
-                    <div class="stat-label">Liked</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Features -->
-        <section class="section">
-            <h2 class="section-title">🚀 ฟีเจอร์หลัก</h2>
-            <div class="feature-grid">
-                <a href="users.html" class="feature-card">
-                    <div class="feature-card-icon">👤</div>
-                    <h3>จัดการ Users</h3>
-                    <p>เพิ่ม ลบ แสดงรายชื่อผู้ใช้ทั้งหมด</p>
-                </a>
-                <a href="movies.html" class="feature-card">
-                    <div class="feature-card-icon">🎬</div>
-                    <h3>จัดการ Movies</h3>
-                    <p>เพิ่ม ลบ หนัง + เชื่อม WATCHED / LIKED</p>
-                </a>
-                <a href="recommend.html" class="feature-card">
-                    <div class="feature-card-icon">📊</div>
-                    <h3>Recommendation</h3>
-                    <p>วิเคราะห์ Graph แนะนำหนังที่น่าจะชอบ</p>
-                </a>
-            </div>
-        </section>
-
-        <!-- How It Works -->
-        <section class="section">
-            <div class="card">
-                <div class="card-header">
-                    <h2>🧠 ระบบทำงานอย่างไร?</h2>
-                </div>
-                <div class="card-body">
-                    <div class="grid-3">
-                        <div style="text-align:center; padding:1rem;">
-                            <div style="font-size:2rem; margin-bottom:0.5rem;">1️⃣</div>
-                            <h3 style="margin-bottom:0.5rem;">เก็บข้อมูล</h3>
-                            <p style="color:var(--text-muted); font-size:0.875rem;">สร้าง User & Movie ใน Graph</p>
-                        </div>
-                        <div style="text-align:center; padding:1rem;">
-                            <div style="font-size:2rem; margin-bottom:0.5rem;">2️⃣</div>
-                            <h3 style="margin-bottom:0.5rem;">สร้างความสัมพันธ์</h3>
-                            <p style="color:var(--text-muted); font-size:0.875rem;">เชื่อม WATCHED / LIKED</p>
-                        </div>
-                        <div style="text-align:center; padding:1rem;">
-                            <div style="font-size:2rem; margin-bottom:0.5rem;">3️⃣</div>
-                            <h3 style="margin-bottom:0.5rem;">แนะนำ</h3>
-                            <p style="color:var(--text-muted); font-size:0.875rem;">วิเคราะห์ Graph เพื่อแนะนำ</p>
-                        </div>
+    <!-- ========== CONTENT ROWS ========== -->
+    <main class="main-content">
+        <div class="movie-row">
+            <h2 class="row-title">ภาพยนตร์แนะนำ (รอดึงข้อมูล)</h2>
+            <div class="row-container">
+                <button class="slider-arrow left-arrow">❮</button>
+                
+                <!-- กล่องนี้รอให้ Backend สั่งลูป (Loop) ข้อมูลหนังมาใส่ -->
+                <div class="row-posters" id="movieListContainer">
+                    
+                    <!-- กล่องจำลอง 1 -->
+                    <div class="poster-card">
+                        <div class="poster-card-title">Movie 1</div>
+                        <div class="poster-card-sub">Action</div>
                     </div>
-                </div>
-            </div>
-        </section>
+                    <!-- กล่องจำลอง 2 -->
+                    <div class="poster-card">
+                        <div class="poster-card-title">Movie 2</div>
+                        <div class="poster-card-sub">Drama</div>
+                    </div>
+                    <!-- กล่องจำลอง 3 -->
+                    <div class="poster-card">
+                        <div class="poster-card-title">Movie 3</div>
+                        <div class="poster-card-sub">Comedy</div>
+                    </div>
+                    <!-- กล่องจำลอง 4 -->
+                    <div class="poster-card">
+                        <div class="poster-card-title">Movie 4</div>
+                        <div class="poster-card-sub">Sci-Fi</div>
+                    </div>
+                    <!-- กล่องจำลอง 5 -->
+                    <div class="poster-card">
+                        <div class="poster-card-title">Movie 5</div>
+                        <div class="poster-card-sub">Horror</div>
+                    </div>
 
+                </div>
+
+                <button class="slider-arrow right-arrow">❯</button>
+            </div>
+        </div>
     </main>
 
-    <div class="toast-container" id="toastContainer"></div>
+    <!-- ========== MOVIE MODAL ========== -->
+    <div class="modal-overlay" id="movieModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <div class="modal-hero" id="modalHeroImage">
+                <span>[Movie Cover Image]</span>
+                <div class="modal-hero-fade"></div>
+            </div>
+            <div class="modal-body">
+                <h2 class="modal-title" id="modalTitle">[Movie Title]</h2>
+                <div class="hero-meta" style="margin-bottom: 1rem;" id="modalMeta">
+                    <span>[Year]</span>
+                    <span style="margin-left: 10px; border: 1px solid #ccc; padding: 2px 5px;">[Genre]</span>
+                </div>
+                <p id="modalDesc">[Full description of the movie will go here...]</p>
+            </div>
+        </div>
+    </div>
 
+    <!-- ไฟล์ JS ของ Backend คุณ -->
     <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
     <script src="js/home.js"></script>
-</body>
 
+    <!-- สคริปต์ควบคุม UI เบื้องต้น -->
+    <script>
+        // Navbar Scroll
+        window.addEventListener("scroll", () => {
+            document.getElementById("navbar").classList.toggle("scrolled", window.scrollY > 50);
+        });
+
+        // เปิด/ปิด Modal
+        function openModal() {
+            document.getElementById('movieModal').classList.add('active');
+        }
+        function closeModal() {
+            document.getElementById('movieModal').classList.remove('active');
+        }
+    </script>
+</body>
 </html>
