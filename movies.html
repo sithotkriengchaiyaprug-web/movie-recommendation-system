@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 Movies - MovieRec</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="navbar-brand"><span>🎬</span> MovieRec</a>
+            <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+            <ul class="navbar-links" id="navLinks">
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="users.html">👤 Users</a></li>
+                <li><a href="movies.html" class="active">🎬 Movies</a></li>
+                <li><a href="recommend.html">📊 Recommend</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>🎬 จัดการ Movies</h1>
+            <p>เพิ่ม ลบ หนัง และจัดการความสัมพันธ์ WATCHED / LIKED</p>
+        </div>
+
+        <div class="grid-2">
+            <!-- Add Movie -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>➕ เพิ่ม Movie ใหม่</h2>
+                </div>
+                <div class="card-body">
+                    <form id="addMovieForm">
+                        <div class="form-group">
+                            <label for="movieTitle">ชื่อหนัง</label>
+                            <input type="text" id="movieTitle" class="form-control"
+                                placeholder="เช่น Inception, The Matrix..." required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="movieGenre">ประเภท</label>
+                                <select id="movieGenre" class="form-control">
+                                    <option value="">-- เลือก --</option>
+                                    <option value="Action">🔥 Action</option>
+                                    <option value="Comedy">😂 Comedy</option>
+                                    <option value="Drama">🎭 Drama</option>
+                                    <option value="Sci-Fi">🚀 Sci-Fi</option>
+                                    <option value="Horror">👻 Horror</option>
+                                    <option value="Romance">💕 Romance</option>
+                                    <option value="Thriller">😱 Thriller</option>
+                                    <option value="Animation">🎨 Animation</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="movieYear">ปี</label>
+                                <input type="number" id="movieYear" class="form-control" placeholder="2024" min="1900"
+                                    max="2030">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block" id="addMovieBtn">
+                            ➕ เพิ่ม Movie
+                        </button>
+                    </form>
+                    <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border);">
+                        <button class="btn btn-outline btn-sm" id="sampleMoviesBtn">
+                            🎲 เพิ่ม Sample Movies (8 เรื่อง)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Relationship -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🔗 เชื่อมความสัมพันธ์</h2>
+                </div>
+                <div class="card-body">
+                    <form id="addRelForm">
+                        <div class="form-group">
+                            <label for="relUser">👤 เลือก User</label>
+                            <select id="relUser" class="form-control" required>
+                                <option value="">-- เลือก User --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="relType">🔗 ประเภท</label>
+                            <select id="relType" class="form-control" required>
+                                <option value="">-- เลือก --</option>
+                                <option value="WATCHED">👁️ WATCHED (ดูแล้ว)</option>
+                                <option value="LIKED">❤️ LIKED (ชอบ)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="relMovie">🎬 เลือก Movie</label>
+                            <select id="relMovie" class="form-control" required>
+                                <option value="">-- เลือก Movie --</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-block">
+                            🔗 สร้างความสัมพันธ์
+                        </button>
+                    </form>
+                    <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border);">
+                        <button class="btn btn-outline btn-sm" id="sampleRelsBtn">
+                            🎲 เพิ่ม Sample Relationships
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movie List -->
+        <div class="card" style="margin-top:1.5rem;">
+            <div class="card-header">
+                <h2>📋 รายชื่อ Movies ทั้งหมด</h2>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                    <span class="badge badge-primary" id="movieCountBadge">0 เรื่อง</span>
+                    <button class="btn btn-sm btn-outline" id="refreshMoviesBtn">🔄</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="movieList">
+                    <div class="loading-overlay">
+                        <div class="spinner"></div><span>กำลังโหลด...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Relationships List -->
+        <div class="card" style="margin-top:1.5rem;">
+            <div class="card-header">
+                <h2>🔗 ความสัมพันธ์ทั้งหมด</h2>
+                <span class="badge badge-success" id="relCountBadge">0 รายการ</span>
+            </div>
+            <div class="card-body">
+                <div id="relList">
+                    <div class="loading-overlay">
+                        <div class="spinner"></div><span>กำลังโหลด...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/movies.js"></script>
+</body>
+
+</html>

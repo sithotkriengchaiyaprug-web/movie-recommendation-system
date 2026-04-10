@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 Movie Recommendation System</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="navbar-brand">
+                <span>🎬</span> MovieRec
+            </a>
+            <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+            <ul class="navbar-links" id="navLinks">
+                <li><a href="index.html" class="active">🏠 Home</a></li>
+                <li><a href="users.html">👤 Users</a></li>
+                <li><a href="movies.html">🎬 Movies</a></li>
+                <li><a href="recommend.html">📊 Recommend</a></li>
+            </ul>
+            <div class="connection-status status-disconnected" id="connStatus">
+                <span class="status-dot"></span>
+                <span id="connText">Checking...</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main -->
+    <main class="container">
+
+        <!-- Hero -->
+        <section class="hero">
+            <h1>🎬 Movie Recommendation System</h1>
+            <p>
+                ระบบแนะนำหนังอัจฉริยะ ใช้ Neo4j Graph Database
+                วิเคราะห์ความสัมพันธ์ระหว่างผู้ใช้และหนัง
+            </p>
+            <div class="hero-actions">
+                <a href="recommend.html" class="btn btn-primary btn-lg">📊 เริ่มใช้งาน</a>
+                <a href="users.html" class="btn btn-outline btn-lg">👤 จัดการ Users</a>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <section class="section">
+            <h2 class="section-title">📈 สถิติระบบ</h2>
+            <div class="grid-4">
+                <div class="stat-card">
+                    <div class="stat-icon">👤</div>
+                    <div class="stat-number" id="totalUsers">-</div>
+                    <div class="stat-label">Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎬</div>
+                    <div class="stat-number" id="totalMovies">-</div>
+                    <div class="stat-label">Movies</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👁️</div>
+                    <div class="stat-number" id="totalWatched">-</div>
+                    <div class="stat-label">Watched</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">❤️</div>
+                    <div class="stat-number" id="totalLiked">-</div>
+                    <div class="stat-label">Liked</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section class="section">
+            <h2 class="section-title">🚀 ฟีเจอร์หลัก</h2>
+            <div class="feature-grid">
+                <a href="users.html" class="feature-card">
+                    <div class="feature-card-icon">👤</div>
+                    <h3>จัดการ Users</h3>
+                    <p>เพิ่ม ลบ แสดงรายชื่อผู้ใช้ทั้งหมด</p>
+                </a>
+                <a href="movies.html" class="feature-card">
+                    <div class="feature-card-icon">🎬</div>
+                    <h3>จัดการ Movies</h3>
+                    <p>เพิ่ม ลบ หนัง + เชื่อม WATCHED / LIKED</p>
+                </a>
+                <a href="recommend.html" class="feature-card">
+                    <div class="feature-card-icon">📊</div>
+                    <h3>Recommendation</h3>
+                    <p>วิเคราะห์ Graph แนะนำหนังที่น่าจะชอบ</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>🧠 ระบบทำงานอย่างไร?</h2>
+                </div>
+                <div class="card-body">
+                    <div class="grid-3">
+                        <div style="text-align:center; padding:1rem;">
+                            <div style="font-size:2rem; margin-bottom:0.5rem;">1️⃣</div>
+                            <h3 style="margin-bottom:0.5rem;">เก็บข้อมูล</h3>
+                            <p style="color:var(--text-muted); font-size:0.875rem;">สร้าง User & Movie ใน Graph</p>
+                        </div>
+                        <div style="text-align:center; padding:1rem;">
+                            <div style="font-size:2rem; margin-bottom:0.5rem;">2️⃣</div>
+                            <h3 style="margin-bottom:0.5rem;">สร้างความสัมพันธ์</h3>
+                            <p style="color:var(--text-muted); font-size:0.875rem;">เชื่อม WATCHED / LIKED</p>
+                        </div>
+                        <div style="text-align:center; padding:1rem;">
+                            <div style="font-size:2rem; margin-bottom:0.5rem;">3️⃣</div>
+                            <h3 style="margin-bottom:0.5rem;">แนะนำ</h3>
+                            <p style="color:var(--text-muted); font-size:0.875rem;">วิเคราะห์ Graph เพื่อแนะนำ</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/home.js"></script>
+</body>
+
+</html>
