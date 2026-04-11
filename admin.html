@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovieRec Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-radius: 28px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            min-height: 360px;
+            display: grid;
+            align-items: end;
+            background:
+                linear-gradient(120deg, rgba(2, 6, 23, 0.88), rgba(127, 29, 29, 0.54)),
+                radial-gradient(circle at top right, rgba(251, 191, 36, 0.34), transparent 28%),
+                #111827;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(0deg, rgba(2, 6, 23, 0.35), rgba(2, 6, 23, 0)),
+                var(--hero-image, none);
+            background-size: cover;
+            background-position: center;
+            opacity: 0.28;
+            pointer-events: none;
+        }
+
+        .hero-content,
+        .hero-side {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-layout {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: 1.2fr 0.8fr;
+            align-items: end;
+        }
+
+        .hero-kicker {
+            display: inline-flex;
+            gap: 0.5rem;
+            align-items: center;
+            padding: 0.45rem 0.75rem;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero-title {
+            margin: 0 0 0.85rem;
+            font-size: clamp(2.2rem, 5vw, 4.3rem);
+            line-height: 0.95;
+        }
+
+        .hero-description {
+            max-width: 650px;
+            color: #d7e1f0;
+            font-size: 1rem;
+            line-height: 1.7;
+            margin-bottom: 1.2rem;
+        }
+
+        .movie-row-title {
+            margin: 0 0 0.9rem;
+            font-size: 1.1rem;
+        }
+
+        .poster-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 1rem;
+        }
+
+        .poster-card {
+            border-radius: 20px;
+            overflow: hidden;
+            background: rgba(30, 41, 59, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            cursor: pointer;
+            transition: transform 0.18s ease, border-color 0.18s ease;
+        }
+
+        .poster-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(239, 68, 68, 0.45);
+        }
+
+        .poster-card img,
+        .poster-placeholder {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            display: block;
+            background: linear-gradient(135deg, #1f2937, #334155);
+        }
+
+        .poster-placeholder {
+            display: grid;
+            place-items: center;
+            color: var(--text-muted);
+            font-size: 2rem;
+        }
+
+        .poster-content {
+            padding: 0.9rem;
+        }
+
+        .poster-title {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-stats {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .movie-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.78);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            z-index: 400;
+        }
+
+        .movie-modal.active {
+            display: flex;
+        }
+
+        .movie-modal-card {
+            width: min(760px, 100%);
+            background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(15, 23, 42, 0.98));
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .movie-modal-hero {
+            min-height: 260px;
+            background: linear-gradient(160deg, rgba(239, 68, 68, 0.25), rgba(15, 23, 42, 0.35)), #1f2937;
+            display: grid;
+            place-items: center;
+        }
+
+        .movie-modal-body {
+            padding: 1.25rem;
+        }
+
+        @media (max-width: 900px) {
+            .hero-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar" id="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="navbar-brand"><span>🎬</span> MovieRec</a>
+            <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+            <ul class="navbar-links" id="navLinks">
+                <li><a href="index.html" class="active">🏠 Home</a></li>
+                <li><a href="users.html">👤 Users</a></li>
+                <li><a href="movies.html">🎬 Movies</a></li>
+                <li><a href="recommend.html">📊 Recommend</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="hero" id="heroSection">
+            <div class="hero-layout">
+                <div class="hero-content">
+                    <div class="hero-kicker">
+                        <div class="connection-badge offline" id="homeConnectionBadge" data-connection-badge>
+                            <span class="dot"></span><span>Checking connection...</span>
+                        </div>
+                    </div>
+                    <h1 class="hero-title" id="heroTitle">Movie Recommendation System</h1>
+                    <p class="hero-description" id="heroDesc">
+                        ใช้ Graph Database เก็บความสัมพันธ์ระหว่าง User และ Movie เช่น WATCHED กับ LIKED เพื่อสร้างคำแนะนำที่อธิบายเหตุผลได้จริง
+                    </p>
+                    <div class="toolbar">
+                        <button class="btn btn-primary" id="loadDashboardBtn">🔄 Reload dashboard</button>
+                        <button class="btn btn-outline" id="seedAllBtn">🎲 Add all sample data</button>
+                        <button class="btn btn-danger" id="resetAllBtn">🧹 Reset demo data</button>
+                    </div>
+                </div>
+                <div class="hero-side">
+                    <div class="dashboard-stats">
+                        <div class="metric-card">
+                            <div class="metric-number" id="homeUserCount">0</div>
+                            <div class="metric-label">Users</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-number" id="homeMovieCount">0</div>
+                            <div class="metric-label">Movies</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-number" id="homeRelationshipCount">0</div>
+                            <div class="metric-label">Relationships</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-number" id="homeActiveUsers">0</div>
+                            <div class="metric-label">Active users</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid-2" style="margin-bottom:1.5rem;">
+            <div class="card">
+                <div class="card-header">
+                    <h2>📌 Project overview</h2>
+                </div>
+                <div class="card-body">
+                    <div class="genre-pill-list" id="topGenresList">
+                        <span class="genre-pill">Loading genres...</span>
+                    </div>
+                    <div class="section-note" id="overviewSummary">
+                        ระบบจะสรุปจำนวน users, movies, relationships และ genre ที่เด่นที่สุดจากข้อมูลจริงของ backend
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>⚡ Quick demo actions</h2>
+                </div>
+                <div class="card-body">
+                    <div class="inline-controls">
+                        <button class="btn btn-outline btn-sm" id="gotoUsersBtn">👤 Go to Users</button>
+                        <button class="btn btn-outline btn-sm" id="gotoMoviesBtn">🎬 Go to Movies</button>
+                        <button class="btn btn-outline btn-sm" id="gotoRecommendBtn">📊 Go to Recommend</button>
+                    </div>
+                    <div class="section-note">
+                        ลำดับเดโมที่แนะนำ: เพิ่ม sample data → ไปหน้า Movies เพื่อผูก WATCHED / LIKED → ไปหน้า Recommend เพื่อโชว์เหตุผลของคำแนะนำ
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <h2 class="movie-row-title">🎞️ Movies in the graph</h2>
+                <div class="toolbar" style="margin:0;">
+                    <input type="text" id="homeMovieSearch" class="form-control search-input" placeholder="ค้นหาหนังใน dashboard">
+                    <span class="badge badge-primary" id="homeMovieBadge">0 เรื่อง</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="poster-grid" id="movieListContainer"></div>
+            </div>
+        </section>
+    </main>
+
+    <div class="movie-modal" id="movieModal">
+        <div class="movie-modal-card">
+            <div class="movie-modal-hero" id="modalHeroImage">🎬</div>
+            <div class="movie-modal-body">
+                <div class="toolbar" style="justify-content:space-between; margin-bottom:1rem;">
+                    <h2 id="modalTitle" style="margin:0;">Movie title</h2>
+                    <button class="btn btn-outline btn-sm" id="closeModalBtn">Close</button>
+                </div>
+                <div class="tag-list" id="modalMeta"></div>
+                <p id="modalDesc" style="color:var(--text-muted); line-height:1.7;"></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/home.js"></script>
+</body>
+
+</html>

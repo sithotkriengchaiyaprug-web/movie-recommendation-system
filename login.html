@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - MovieRec</title>
+    <link rel="stylesheet" href="css/netflix.css">
+</head>
+<body class="login-bg">
+    <div class="login-box">
+        <h1>Sign In</h1>
+        <p style="color: #888; margin-bottom: 10px;">พิมพ์ชื่อ User (เช่น Ari, Bam, Jin)</p>
+        <input type="text" id="usernameInput" class="login-input" placeholder="Enter your name">
+        <button class="login-btn" onclick="handleLogin()">Sign In</button>
+        <p style="color: #888; font-size: 0.9rem;">*ในระบบ Demo นี้ แค่พิมพ์ชื่อที่มีในระบบเพื่อเข้าใช้งาน</p>
+    </div>
+
+    <script>
+        function handleLogin() {
+            const username = document.getElementById('usernameInput').value.trim();
+            if(!username) return alert('กรุณาใส่ชื่อของคุณ');
+            
+            // จำชื่อผู้ใช้ไว้ในเครื่อง
+            localStorage.setItem('currentUser', username);
+            window.location.href = 'index.html'; // ไปหน้าเลือกหนัง
+        }
+    </script>
+</body>
+</html>

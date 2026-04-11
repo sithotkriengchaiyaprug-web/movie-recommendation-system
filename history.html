@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Movies - MovieRec</title>
+    <link rel="stylesheet" href="css/netflix.css">
+</head>
+<body>
+    <nav class="nav">
+        <a href="index.html" class="logo">MOVIEREC</a>
+        <div class="nav-links">
+            <a href="index.html">🏠 Home</a>
+            <a href="profile.html">👤 Users</a>
+            <a href="history.html" class="active">🎬 Movies</a>
+            <a href="my-recommendations.html">📊 Recommend</a>
+        </div>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+    </nav>
+
+    <div class="container">
+        <h2>🎬 ภาพยนตร์ที่คุณชื่นชอบ (ประวัติการกด Like)</h2>
+        <div class="movie-grid" id="historyGrid"></div>
+    </div>
+
+    <script>
+        const currentUser = localStorage.getItem('currentUser');
+        if(!currentUser) window.location.href = 'login.html';
+
+        async function loadHistory() {
+            const profRes = await fetch(`http://localhost:4000/api/users/${currentUser}/profile`);
+            const profile = await profRes.json();
+            
+            const movRes = await fetch(`http://localhost:4000/api/movies`);
+            const allMovies = await movRes.json();
+            
+            const grid = document.getElementById('historyGrid');
+            
+            // กรองเอาเฉพาะหนังที่มีชื่ออยู่ในประวัติ Liked ของเรา
+            const myMovies = allMovies.filter(m => profile.liked.includes(m.title));
+
+            if(myMovies.length === 0) {
+                grid.innerHTML = '<p style="color:#888;">คุณยังไม่ได้กดชื่นชอบภาพยนตร์เรื่องใดเลย</p>';
+                return;
+            }
+
+            myMovies.forEach(movie => {
+                grid.innerHTML += `
+                    <div class="movie-card">
+                        <img src="${movie.image_url}" alt="${movie.title}">
+                        <div style="padding:10px; background:#222; text-align:center;">${movie.title}</div>
+                    </div>`;
+            });
+        }
+        function logout() { localStorage.removeItem('currentUser'); window.location.href = 'login.html'; }
+        loadHistory();
+    </script>
+</body>
+</html>

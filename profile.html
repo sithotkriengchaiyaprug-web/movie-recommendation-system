@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile - MovieRec</title>
+    <link rel="stylesheet" href="css/netflix.css">
+    <!-- โหลด Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="nav">
+        <a href="index.html" class="logo">MOVIEREC</a>
+        <div class="nav-links">
+            <a href="index.html">🏠 Home</a>
+            <a href="profile.html" class="active">👤 Users</a>
+            <a href="history.html">🎬 Movies</a>
+            <a href="my-recommendations.html">📊 Recommend</a>
+        </div>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+    </nav>
+
+    <div class="container">
+        <h2>👤 โปรไฟล์ของคุณ: <span id="userName" style="color:#E50914;"></span></h2>
+        
+        <div class="profile-stats">
+            <h3 style="text-align: center; margin-bottom: 20px;">สถิติแนวภาพยนตร์ที่คุณชื่นชอบ (Genres)</h3>
+            <div class="chart-container">
+                <canvas id="genreChart"></canvas>
+            </div>
+            <p id="noDataMsg" style="text-align:center; color:#888; display:none; margin-top:20px;">ยังไม่มีข้อมูลสถิติ กรุณาไปกดถูกใจหนังก่อนครับ</p>
+        </div>
+    </div>
+
+    <script>
+        const currentUser = localStorage.getItem('currentUser');
+        if(!currentUser) window.location.href = 'login.html';
+        document.getElementById('userName').innerText = currentUser;
+
+        async function loadProfileStats() {
+            try {
+                // 1. ดึงชื่อหนังที่ user คนนี้ like ไว้
+                const profRes = await fetch(`http://localhost:4000/api/users/${currentUser}/profile`);
+                const profile = await profRes.json();
+                const likedTitles = profile.liked;
+
+                if(likedTitles.length === 0) {
+                    document.getElementById('noDataMsg').style.display = 'block';
+                    return;
+                }
+
+                // 2. ดึงหนังทั้งหมด เพื่อเอามาเทียบหา Genre
+                const movRes = await fetch(`http://localhost:4000/api/movies`);
+                const allMovies = await movRes.json();
+
+                // 3. นับจำนวน Genre
+                const genreCounts = {};
+                likedTitles.forEach(title => {
+                    const movie = allMovies.find(m => m.title === title);
+                    if(movie && movie.genre) {
+                        genreCounts[movie.genre] = (genreCounts[movie.genre] || 0) + 1;
+                    }
+                });
+
+                // 4. วาดกราฟด้วย Chart.js
+                const ctx = document.getElementById('genreChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(genreCounts),
+                        datasets: [{
+                            data: Object.values(genreCounts),
+                            backgroundColor: ['#E50914', '#564d4d', '#831010', '#b81d24', '#221f1f', '#f5f5f1'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { plugins: { legend: { labels: { color: 'white', font: { size: 14 } } } } }
+                });
+
+            } catch (err) { console.log(err); }
+        }
+
+        function logout() { localStorage.removeItem('currentUser'); window.location.href = 'login.html'; }
+        loadProfileStats();
+    </script>
+</body>
+</html>

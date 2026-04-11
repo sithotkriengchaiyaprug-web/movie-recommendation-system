@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Recommendations - MovieRec</title>
+    <link rel="stylesheet" href="css/netflix.css">
+</head>
+<body>
+    <nav class="nav">
+        <a href="index.html" class="logo">MOVIEREC</a>
+        <div class="nav-links">
+            <a href="index.html">🏠 Home</a>
+            <a href="profile.html">👤 Users</a>
+            <a href="history.html">🎬 Movies</a>
+            <a href="my-recommendations.html" class="active">📊 Recommend</a>
+        </div>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+    </nav>
+
+    <div class="container">
+        <h2>✨ ภาพยนตร์ที่แนะนำสำหรับคุณ</h2>
+        <p style="color: #888; margin-bottom: 30px;">ประมวลผลด้วย Graph Database จากความชอบของคุณและผู้ใช้อื่นๆ</p>
+        <div class="movie-grid" id="recGrid"></div>
+    </div>
+
+    <script>
+        const currentUser = localStorage.getItem('currentUser');
+        if(!currentUser) window.location.href = 'login.html';
+
+        async function loadRecommendations() {
+            const grid = document.getElementById('recGrid');
+            grid.innerHTML = '<p>⏳ กำลังวิเคราะห์ Graph Database...</p>';
+            try {
+                const res = await fetch(`http://localhost:4000/api/recommend/${currentUser}/collaborative`);
+                const movies = await res.json();
+                grid.innerHTML = '';
+
+                if(movies.length === 0) {
+                    grid.innerHTML = '<h3 style="color:#E50914;">ยังไม่มีข้อมูลเพียงพอ กรุณากลับไปกด Like หนังเพิ่มครับ</h3>';
+                    return;
+                }
+
+                movies.forEach(movie => {
+                    grid.innerHTML += `
+                        <div class="movie-card">
+                            <img src="${movie.image_url}" alt="${movie.title}">
+                            <div style="padding:10px; background:#222; text-align:center;">
+                                <strong>${movie.title}</strong><br>
+                                <span style="font-size:0.8rem; color:#46d369;">⭐ ${movie.score} แมตช์</span>
+                            </div>
+                        </div>`;
+                });
+            } catch (err) { grid.innerHTML = '<p>เกิดข้อผิดพลาด</p>'; }
+        }
+        function logout() { localStorage.removeItem('currentUser'); window.location.href = 'login.html'; }
+        loadRecommendations();
+    </script>
+</body>
+</html>
