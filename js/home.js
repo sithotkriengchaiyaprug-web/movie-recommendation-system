@@ -33,6 +33,7 @@ async function loadDashboard() {
         renderHero(dashboard);
         renderOverview(dashboard);
         renderMovieGrid();
+        await hydrateDashboardPosters();
         MovieRecUI.refreshConnectionStatus();
     } catch (error) {
         container.innerHTML = `
@@ -58,8 +59,8 @@ function renderHero({ users, movies, relationships, stats }) {
 
     const heroTitle = featured?.title || 'Movie Recommendation System';
     const heroDesc = featured
-        ? `${featured.title}${featured.year ? ` (${featured.year})` : ''} เป็นหนังเด่นในฐานข้อมูลตอนนี้${featured.genre ? ` อยู่ใน genre ${featured.genre}` : ''} และสามารถใช้เป็นตัวอย่างสำหรับ demo การเชื่อม WATCHED / LIKED ได้ทันที`
-        : 'ใช้ Graph Database เก็บความสัมพันธ์ระหว่าง User และ Movie เช่น WATCHED กับ LIKED เพื่อสร้างคำแนะนำที่อธิบายเหตุผลได้จริง';
+        ? `${featured.title}${featured.year ? ` (${featured.year})` : ''} เป็นหนังเด่นในข้อมูลตอนนี้${featured.genre ? ` อยู่ใน genre ${featured.genre}` : ''} และพร้อมใช้เป็นตัวอย่างสำหรับ demo WATCHED / LIKED`
+        : 'ใช้ Graph Database เก็บความสัมพันธ์ระหว่าง User และ Movie เช่น WATCHED กับ LIKED เพื่อสร้าง recommendation ที่อธิบายเหตุผลได้';
 
     document.getElementById('heroTitle').textContent = heroTitle;
     document.getElementById('heroDesc').textContent = heroDesc;
@@ -109,7 +110,7 @@ function renderMovieGrid() {
     container.innerHTML = movies.map((movie) => `
         <article class="poster-card" onclick="openMovieModal('${MovieRecUI.escJs(movie.title)}')">
             ${movie.image_url
-                ? `<img src="${movie.image_url}" alt="${MovieRecUI.esc(movie.title)}">`
+                ? `<img src="${movie.image_url}" alt="${MovieRecUI.esc(movie.title)}" data-movie-poster="${MovieRecUI.esc(movie.title)}">`
                 : '<div class="poster-placeholder">🎬</div>'}
             <div class="poster-content">
                 <div class="poster-title">${MovieRecUI.esc(movie.title)}</div>
@@ -121,6 +122,30 @@ function renderMovieGrid() {
             </div>
         </article>
     `).join('');
+}
+
+async function hydrateDashboardPosters() {
+    const featured = pickFeaturedMovie(homeState.movies);
+    if (featured) {
+        const poster = await MovieRecUI.resolvePosterUrl(featured);
+        if (poster) {
+            featured.image_url = poster;
+            document.getElementById('heroSection').style.setProperty('--hero-image', `url('${poster}')`);
+        }
+    }
+
+    const posterNodes = document.querySelectorAll('[data-movie-poster]');
+    for (const node of posterNodes) {
+        const title = node.getAttribute('data-movie-poster');
+        const movie = homeState.movies.find((item) => item.title === title);
+        if (!movie) continue;
+
+        const poster = await MovieRecUI.resolvePosterUrl(movie);
+        if (poster) {
+            movie.image_url = poster;
+            node.setAttribute('src', poster);
+        }
+    }
 }
 
 function pickFeaturedMovie(movies) {
@@ -148,6 +173,7 @@ function handleSearchMovies(event) {
         !query || `${movie.title} ${movie.genre || ''} ${movie.year || ''}`.toLowerCase().includes(query)
     );
     renderMovieGrid();
+    hydrateDashboardPosters();
 }
 
 async function handleSeedAll() {
@@ -173,7 +199,7 @@ async function handleResetAll() {
     }
 }
 
-function openMovieModal(title) {
+async function openMovieModal(title) {
     const movie = homeState.movies.find((item) => item.title === title);
     if (!movie) return;
 
@@ -186,11 +212,13 @@ function openMovieModal(title) {
     `;
     document.getElementById('modalDesc').textContent =
         movie.description ||
-        `หนังเรื่องนี้อยู่ใน graph database ของระบบ${movie.genre ? ` ใน genre ${movie.genre}` : ''}${movie.year ? ` และออกฉายในปี ${movie.year}` : ''}. ใช้เปิดอธิบายการเชื่อม WATCHED / LIKED และผลลัพธ์ recommendation ได้ทันที`;
+        `หนังเรื่องนี้อยู่ใน graph database ของระบบ${movie.genre ? ` ใน genre ${movie.genre}` : ''}${movie.year ? ` และออกฉายในปี ${movie.year}` : ''}`;
 
     const hero = document.getElementById('modalHeroImage');
-    hero.innerHTML = movie.image_url
-        ? `<img src="${movie.image_url}" alt="${MovieRecUI.esc(movie.title)}" style="width:100%; height:100%; object-fit:cover;">`
+    const poster = await MovieRecUI.resolvePosterUrl(movie);
+    if (poster) movie.image_url = poster;
+    hero.innerHTML = (poster || movie.image_url)
+        ? `<img src="${MovieRecUI.esc(poster || movie.image_url)}" alt="${MovieRecUI.esc(movie.title)}" style="width:100%; height:100%; object-fit:cover;">`
         : '🎬';
 
     document.getElementById('movieModal').classList.add('active');

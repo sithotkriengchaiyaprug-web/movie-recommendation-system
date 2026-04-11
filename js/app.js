@@ -1,4 +1,38 @@
 const MovieRecUI = (() => {
+    const WIKI_TITLE_MAP = {
+        'Inception': 'Inception',
+        'The Matrix': 'The Matrix',
+        'Interstellar': 'Interstellar (film)',
+        'Blade Runner 2049': 'Blade Runner 2049',
+        'Arrival': 'Arrival (film)',
+        'Mad Max: Fury Road': 'Mad Max: Fury Road',
+        'The Dark Knight': 'The Dark Knight',
+        'John Wick': 'John Wick (film)',
+        'Gladiator': 'Gladiator (2000 film)',
+        'Mission: Impossible - Fallout': 'Mission: Impossible – Fallout',
+        'Parasite': 'Parasite (film)',
+        'Gone Girl': 'Gone Girl (film)',
+        'Shutter Island': 'Shutter Island (film)',
+        'Prisoners': 'Prisoners (2013 film)',
+        'Titanic': 'Titanic (1997 film)',
+        'La La Land': 'La La Land',
+        'Before Sunrise': 'Before Sunrise',
+        'About Time': 'About Time (2013 film)',
+        'The Grand Budapest Hotel': 'The Grand Budapest Hotel',
+        'Knives Out': 'Knives Out',
+        'Superbad': 'Superbad',
+        'Little Miss Sunshine': 'Little Miss Sunshine',
+        'Toy Story': 'Toy Story',
+        'Spider-Man: Into the Spider-Verse': 'Spider-Man: Into the Spider-Verse',
+        'Coco': 'Coco (2017 film)',
+        'How to Train Your Dragon': 'How to Train Your Dragon (film)',
+        'Whiplash': 'Whiplash (2014 film)',
+        'The Shawshank Redemption': 'The Shawshank Redemption',
+        'The Social Network': 'The Social Network',
+        'Ford v Ferrari': 'Ford v Ferrari'
+    };
+    const posterCache = new Map();
+
     function esc(text) {
         if (text === null || text === undefined) return '';
         const div = document.createElement('div');
@@ -40,6 +74,31 @@ const MovieRecUI = (() => {
             clearTimeout(timer);
             timer = setTimeout(() => fn(...args), wait);
         };
+    }
+
+    function isGeneratedPoster(url) {
+        return typeof url === 'string' && url.startsWith('data:image/svg+xml');
+    }
+
+    async function resolvePosterUrl(movie) {
+        if (!movie?.title) return movie?.image_url || '';
+        if (movie.image_url && !isGeneratedPoster(movie.image_url)) return movie.image_url;
+        if (posterCache.has(movie.title)) return posterCache.get(movie.title);
+
+        const wikiTitle = movie.wiki_title || WIKI_TITLE_MAP[movie.title] || movie.title;
+
+        try {
+            const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`);
+            if (!response.ok) throw new Error(`Wikipedia poster lookup failed: HTTP ${response.status}`);
+            const payload = await response.json();
+            const poster = payload?.originalimage?.source || payload?.thumbnail?.source || movie.image_url || '';
+            posterCache.set(movie.title, poster);
+            return poster;
+        } catch {
+            const fallback = movie.image_url || '';
+            posterCache.set(movie.title, fallback);
+            return fallback;
+        }
     }
 
     function setConnectionBadge(targetId, status) {
@@ -99,6 +158,8 @@ const MovieRecUI = (() => {
         toast,
         toggleMenu,
         debounce,
+        isGeneratedPoster,
+        resolvePosterUrl,
         setConnectionBadge,
         refreshConnectionStatus
     };

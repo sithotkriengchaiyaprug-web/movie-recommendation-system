@@ -153,10 +153,10 @@ async function getMovieTitles() {
     return apiFetch('/movies/titles');
 }
 
-async function createMovie(title, genre, year) {
+async function createMovie(title, genre, year, image_url = null, description = null) {
     return apiFetch('/movies', {
         method: 'POST',
-        body: JSON.stringify({ title, genre, year })
+        body: JSON.stringify({ title, genre, year, image_url, description })
     });
 }
 
@@ -181,7 +181,7 @@ async function updateMovieAPI(originalTitle, payload) {
         }
 
         await deleteMovieAPI(originalTitle);
-        await createMovie(payload.title, payload.genre, payload.year);
+        await createMovie(payload.title, payload.genre, payload.year, payload.image_url, payload.description);
 
         for (const rel of affected) {
             await createRelationship(rel.user, payload.title, rel.relType || rel.type);

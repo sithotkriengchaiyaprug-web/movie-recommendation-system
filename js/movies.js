@@ -17,6 +17,10 @@ const moviesState = {
     movieSearch: '',
     relSearch: '',
     genreFilter: '',
+    relationshipMovieSearch: '',
+    editRelationshipMovieSearch: '',
+    selectedRelationshipMovie: '',
+    selectedEditRelationshipMovie: '',
     editingMovie: null,
     editingRelationship: null
 };
@@ -37,6 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('movieSearchInput').addEventListener('input', MovieRecUI.debounce(handleMovieSearch, 150));
     document.getElementById('relSearchInput').addEventListener('input', MovieRecUI.debounce(handleRelSearch, 150));
     document.getElementById('movieGenreFilter').addEventListener('change', handleGenreFilter);
+    document.getElementById('relMovieSearch').addEventListener('input', MovieRecUI.debounce(handleRelationshipMovieSearch, 120));
+    document.getElementById('editRelMovieSearch').addEventListener('input', MovieRecUI.debounce(handleEditRelationshipMovieSearch, 120));
 
     refreshAll();
 });
@@ -45,9 +51,9 @@ function setupGenreOptions() {
     const options = ['<option value="">-- เลือก --</option>']
         .concat(GENRES.map((genre) => `<option value="${genre}">${GENRE_ICONS[genre] || '🎬'} ${genre}</option>`))
         .join('');
+
     document.getElementById('movieGenre').innerHTML = options;
     document.getElementById('editMovieGenre').innerHTML = options;
-
     document.getElementById('movieGenreFilter').innerHTML = [
         '<option value="">ทุก genre</option>',
         ...GENRES.map((genre) => `<option value="${genre}">${genre}</option>`)
@@ -76,7 +82,11 @@ async function refreshAll() {
         })) : [];
 
         renderDropdowns();
+        ensureSelectionStillValid();
+        renderMoviePicker('create');
+        renderMoviePicker('edit');
         renderMovieList();
+        hydrateMovieCatalogPosters();
         renderRelationshipList();
         MovieRecUI.refreshConnectionStatus();
     } catch (error) {
@@ -86,25 +96,81 @@ async function refreshAll() {
     }
 }
 
+function ensureSelectionStillValid() {
+    const titles = new Set(moviesState.movies.map((movie) => movie.title));
+    if (!titles.has(moviesState.selectedRelationshipMovie)) {
+        moviesState.selectedRelationshipMovie = '';
+    }
+    if (!titles.has(moviesState.selectedEditRelationshipMovie)) {
+        moviesState.selectedEditRelationshipMovie = '';
+    }
+    syncMovieSelectionInput('create');
+    syncMovieSelectionInput('edit');
+}
+
 function renderDropdowns() {
     const userOptions = ['<option value="">-- เลือก User --</option>']
         .concat(moviesState.users.map((user) => `<option value="${MovieRecUI.esc(user.name)}">${MovieRecUI.esc(user.name)}</option>`))
         .join('');
 
-    const movieOptions = ['<option value="">-- เลือก Movie --</option>']
-        .concat(moviesState.movies.map((movie) => `<option value="${MovieRecUI.esc(movie.title)}">${MovieRecUI.esc(movie.title)}</option>`))
-        .join('');
-
     document.getElementById('relUser').innerHTML = userOptions;
     document.getElementById('editRelUser').innerHTML = userOptions;
-    document.getElementById('relMovie').innerHTML = movieOptions;
-    document.getElementById('editRelMovie').innerHTML = movieOptions;
+}
+
+function renderMoviePicker(mode) {
+    const isEdit = mode === 'edit';
+    const search = (isEdit ? moviesState.editRelationshipMovieSearch : moviesState.relationshipMovieSearch).trim().toLowerCase();
+    const selectedTitle = isEdit ? moviesState.selectedEditRelationshipMovie : moviesState.selectedRelationshipMovie;
+    const picker = document.getElementById(isEdit ? 'editRelMoviePicker' : 'relMoviePicker');
+    const summary = document.getElementById(isEdit ? 'editRelMovieSelectedSummary' : 'relMovieSelectedSummary');
+    const sourceMovies = moviesState.movies.filter((movie) => {
+        const haystack = `${movie.title} ${movie.genre || ''} ${movie.year || ''}`.toLowerCase();
+        return !search || haystack.includes(search);
+    });
+
+    const selectedMovie = moviesState.movies.find((movie) => movie.title === selectedTitle);
+    summary.textContent = selectedMovie
+        ? `Selected: ${selectedMovie.title}${selectedMovie.genre ? ` • ${selectedMovie.genre}` : ''}${selectedMovie.year ? ` • ${selectedMovie.year}` : ''}`
+        : 'ยังไม่ได้เลือก Movie';
+
+    if (!sourceMovies.length) {
+        picker.innerHTML = '<div class="empty-state compact"><p>ไม่พบหนังที่ตรงกับคำค้น</p></div>';
+        return;
+    }
+
+    picker.innerHTML = sourceMovies.map((movie) => `
+        <button type="button" class="poster-option ${movie.title === selectedTitle ? 'active' : ''}" onclick="selectRelationshipMovie('${mode}','${MovieRecUI.escJs(movie.title)}')">
+            ${movie.image_url
+                ? `<img src="${movie.image_url}" alt="${MovieRecUI.esc(movie.title)}">`
+                : '<div class="poster-option-placeholder">🎬</div>'}
+            <div class="poster-option-content">
+                <strong>${MovieRecUI.esc(movie.title)}</strong>
+                <span>${MovieRecUI.esc(movie.genre || 'Movie')}${movie.year ? ` • ${movie.year}` : ''}</span>
+            </div>
+        </button>
+    `).join('');
+}
+
+function syncMovieSelectionInput(mode) {
+    const isEdit = mode === 'edit';
+    const value = isEdit ? moviesState.selectedEditRelationshipMovie : moviesState.selectedRelationshipMovie;
+    document.getElementById(isEdit ? 'editRelMovie' : 'relMovie').value = value || '';
+}
+
+function selectRelationshipMovie(mode, title) {
+    if (mode === 'edit') {
+        moviesState.selectedEditRelationshipMovie = title;
+    } else {
+        moviesState.selectedRelationshipMovie = title;
+    }
+    syncMovieSelectionInput(mode);
+    renderMoviePicker(mode);
 }
 
 function renderMovieList() {
     const query = moviesState.movieSearch.trim().toLowerCase();
     const filtered = moviesState.movies.filter((movie) => {
-        const matchesSearch = !query || `${movie.title} ${movie.genre || ''} ${movie.year || ''}`.toLowerCase().includes(query);
+        const matchesSearch = !query || `${movie.title} ${movie.genre || ''} ${movie.year || ''} ${movie.description || ''}`.toLowerCase().includes(query);
         const matchesGenre = !moviesState.genreFilter || movie.genre === moviesState.genreFilter;
         return matchesSearch && matchesGenre;
     });
@@ -117,31 +183,53 @@ function renderMovieList() {
             <div class="empty-state">
                 <div class="empty-state-icon">🎬</div>
                 <h3>${moviesState.movies.length ? 'ไม่พบหนังที่ค้นหา' : 'ยังไม่มี Movie'}</h3>
-                <p>${moviesState.movies.length ? 'ลองเปลี่ยนคำค้นหรือ genre filter' : 'เพิ่มหนังใหม่หรือกด sample movies เพื่อเริ่มเดโม'}</p>
+                <p>${moviesState.movies.length ? 'ลองเปลี่ยนคำค้นหาหรือ genre filter' : 'เพิ่มหนังใหม่หรือกด sample movies เพื่อเริ่มเดโม'}</p>
             </div>`;
         return;
     }
 
-    listEl.innerHTML = filtered.map((movie) => `
-        <div class="list-item">
-            <div class="list-item-info">
-                <div class="list-item-icon">${GENRE_ICONS[movie.genre] || '🎬'}</div>
-                <div>
+    listEl.innerHTML = `<div class="movie-catalog-grid">${filtered.map((movie) => `
+        <article class="movie-card">
+            <div class="movie-card-poster">
+                ${movie.image_url
+                    ? `<img src="${movie.image_url}" alt="${MovieRecUI.esc(movie.title)}" data-movie-catalog-poster="${MovieRecUI.esc(movie.title)}">`
+                    : '<div class="poster-option-placeholder">🎬</div>'}
+            </div>
+            <div class="movie-card-body">
+                <div class="movie-card-head">
                     <strong>${MovieRecUI.esc(movie.title)}</strong>
-                    <div class="rel-tags">
+                    <div class="tag-list">
                         ${movie.genre ? `<span class="badge badge-primary">${MovieRecUI.esc(movie.genre)}</span>` : ''}
                         ${movie.year ? `<span class="badge badge-warning">${movie.year}</span>` : ''}
-                        ${(movie.watchedBy || 0) > 0 ? `<span class="badge badge-primary">👁️ ${movie.watchedBy} คนดู</span>` : ''}
-                        ${(movie.likedBy || 0) > 0 ? `<span class="badge badge-success">❤️ ${movie.likedBy} คนชอบ</span>` : ''}
                     </div>
                 </div>
+                <p class="movie-card-description">${MovieRecUI.esc(movie.description || 'No description')}</p>
+                <div class="tag-list">
+                    ${(movie.watchedBy || 0) > 0 ? `<span class="badge badge-primary">👁️ ${movie.watchedBy} watched</span>` : ''}
+                    ${(movie.likedBy || 0) > 0 ? `<span class="badge badge-success">❤️ ${movie.likedBy} liked</span>` : ''}
+                </div>
+                <div class="list-item-actions" style="margin-top:1rem;">
+                    <button class="btn btn-outline btn-sm" onclick="beginEditMovie('${MovieRecUI.escJs(movie.title)}')">✏️ Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="handleDeleteMovie('${MovieRecUI.escJs(movie.title)}')">🗑️ Delete</button>
+                </div>
             </div>
-            <div class="list-item-actions">
-                <button class="btn btn-outline btn-sm" onclick="beginEditMovie('${MovieRecUI.escJs(movie.title)}')">✏️ Edit</button>
-                <button class="btn btn-danger btn-sm" onclick="handleDeleteMovie('${MovieRecUI.escJs(movie.title)}')">🗑️ Delete</button>
-            </div>
-        </div>
-    `).join('');
+        </article>
+    `).join('')}</div>`;
+}
+
+async function hydrateMovieCatalogPosters() {
+    const posterNodes = document.querySelectorAll('[data-movie-catalog-poster]');
+    for (const node of posterNodes) {
+        const title = node.getAttribute('data-movie-catalog-poster');
+        const movie = moviesState.movies.find((item) => item.title === title);
+        if (!movie) continue;
+
+        const poster = await MovieRecUI.resolvePosterUrl(movie);
+        if (poster) {
+            movie.image_url = poster;
+            node.setAttribute('src', poster);
+        }
+    }
 }
 
 function renderRelationshipList() {
@@ -200,6 +288,8 @@ async function handleAddMovie(event) {
     const genre = document.getElementById('movieGenre').value || null;
     const yearValue = document.getElementById('movieYear').value;
     const year = yearValue ? Number(yearValue) : null;
+    const image_url = document.getElementById('movieImageUrl').value.trim() || null;
+    const description = document.getElementById('movieDescription').value.trim() || null;
     const btn = document.getElementById('addMovieBtn');
 
     if (!title) {
@@ -211,7 +301,7 @@ async function handleAddMovie(event) {
     btn.innerHTML = '<div class="spinner"></div> กำลังเพิ่ม...';
 
     try {
-        await createMovie(title, genre, year);
+        await createMovie(title, genre, year, image_url, description);
         showToast(`เพิ่ม Movie "${title}" สำเร็จ`, 'success');
         event.target.reset();
         document.getElementById('movieGenre').value = '';
@@ -233,6 +323,8 @@ function beginEditMovie(title) {
     document.getElementById('editMovieTitle').value = movie.title;
     document.getElementById('editMovieGenre').value = movie.genre || '';
     document.getElementById('editMovieYear').value = movie.year || '';
+    document.getElementById('editMovieImageUrl').value = movie.image_url || '';
+    document.getElementById('editMovieDescription').value = movie.description || '';
 }
 
 function clearEditMovie() {
@@ -252,7 +344,9 @@ async function handleUpdateMovie(event) {
     const payload = {
         title: document.getElementById('editMovieTitle').value.trim(),
         genre: document.getElementById('editMovieGenre').value || null,
-        year: document.getElementById('editMovieYear').value ? Number(document.getElementById('editMovieYear').value) : null
+        year: document.getElementById('editMovieYear').value ? Number(document.getElementById('editMovieYear').value) : null,
+        image_url: document.getElementById('editMovieImageUrl').value.trim() || null,
+        description: document.getElementById('editMovieDescription').value.trim() || null
     };
 
     if (!payload.title) {
@@ -293,6 +387,11 @@ async function handleAddRelationship(event) {
         await createRelationship(user, movie, type);
         showToast(`สร้างความสัมพันธ์ ${type} สำเร็จ`, 'success');
         event.target.reset();
+        moviesState.selectedRelationshipMovie = '';
+        moviesState.relationshipMovieSearch = '';
+        document.getElementById('relMovieSearch').value = '';
+        syncMovieSelectionInput('create');
+        renderMoviePicker('create');
         await refreshAll();
     } catch (error) {
         showToast(error.message, 'error');
@@ -301,16 +400,25 @@ async function handleAddRelationship(event) {
 
 function beginEditRelationship(user, movie, type) {
     moviesState.editingRelationship = { user, movie, type };
+    moviesState.selectedEditRelationshipMovie = movie;
     document.getElementById('editRelOriginal').value = `${user} -[${type}]-> ${movie}`;
     document.getElementById('editRelUser').value = user;
-    document.getElementById('editRelMovie').value = movie;
     document.getElementById('editRelType').value = type;
+    document.getElementById('editRelMovieSearch').value = '';
+    moviesState.editRelationshipMovieSearch = '';
+    syncMovieSelectionInput('edit');
+    renderMoviePicker('edit');
 }
 
 function clearEditRelationship() {
     moviesState.editingRelationship = null;
+    moviesState.selectedEditRelationshipMovie = '';
+    moviesState.editRelationshipMovieSearch = '';
     document.getElementById('editRelForm').reset();
     document.getElementById('editRelOriginal').value = '';
+    document.getElementById('editRelMovieSearch').value = '';
+    syncMovieSelectionInput('edit');
+    renderMoviePicker('edit');
 }
 
 async function handleUpdateRelationship(event) {
@@ -425,7 +533,18 @@ function handleGenreFilter(event) {
     renderMovieList();
 }
 
+function handleRelationshipMovieSearch(event) {
+    moviesState.relationshipMovieSearch = event.target.value || '';
+    renderMoviePicker('create');
+}
+
+function handleEditRelationshipMovieSearch(event) {
+    moviesState.editRelationshipMovieSearch = event.target.value || '';
+    renderMoviePicker('edit');
+}
+
 window.beginEditMovie = beginEditMovie;
 window.handleDeleteMovie = handleDeleteMovie;
 window.beginEditRelationship = beginEditRelationship;
 window.handleDeleteRelationship = handleDeleteRelationship;
+window.selectRelationshipMovie = selectRelationshipMovie;

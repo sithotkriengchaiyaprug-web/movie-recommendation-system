@@ -25,7 +25,7 @@
     <main class="container">
         <div class="page-header">
             <h1>🎬 จัดการ Movies</h1>
-            <p>เพิ่ม แก้ไข ค้นหา และจัดการความสัมพันธ์ WATCHED / LIKED เพื่อให้ recommendation ดูครบสำหรับการพรีเซนต์</p>
+            <p>เพิ่มหนัง ปรับรายละเอียด และเชื่อม WATCHED / LIKED ผ่านโปสเตอร์ที่กดเลือกได้ทันที เพื่อให้การเดโม recommendation ดูเป็นภาพและใช้งานเร็วขึ้น</p>
         </div>
 
         <div class="toolbar" style="margin-bottom:1rem;">
@@ -57,6 +57,14 @@
                                 <input type="number" id="movieYear" class="form-control" placeholder="2024" min="1900" max="2035">
                             </div>
                         </div>
+                        <div class="form-group">
+                            <label for="movieImageUrl">Poster URL (optional)</label>
+                            <input type="url" id="movieImageUrl" class="form-control" placeholder="https://... or leave empty for auto poster">
+                        </div>
+                        <div class="form-group">
+                            <label for="movieDescription">คำอธิบาย</label>
+                            <textarea id="movieDescription" class="form-control" rows="3" placeholder="สรุปสั้น ๆ ว่าหนังเรื่องนี้ให้อารมณ์แบบไหน"></textarea>
+                        </div>
                         <button type="submit" class="btn btn-primary btn-block" id="addMovieBtn">➕ เพิ่ม Movie</button>
                     </form>
                 </div>
@@ -70,7 +78,7 @@
                     <form id="editMovieForm">
                         <div class="form-group">
                             <label for="editMovieOriginalTitle">Movie ที่เลือก</label>
-                            <input type="text" id="editMovieOriginalTitle" class="form-control" readonly placeholder="เลือกจากรายการด้านล่าง">
+                            <input type="text" id="editMovieOriginalTitle" class="form-control" readonly placeholder="เลือกจากรายการหนังด้านล่าง">
                         </div>
                         <div class="form-group">
                             <label for="editMovieTitle">ชื่อใหม่</label>
@@ -85,6 +93,14 @@
                                 <label for="editMovieYear">ปีใหม่</label>
                                 <input type="number" id="editMovieYear" class="form-control" min="1900" max="2035" placeholder="ปีใหม่">
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="editMovieImageUrl">Poster URL</label>
+                            <input type="url" id="editMovieImageUrl" class="form-control" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label for="editMovieDescription">คำอธิบายใหม่</label>
+                            <textarea id="editMovieDescription" class="form-control" rows="3" placeholder="เพิ่มคำอธิบายหนัง"></textarea>
                         </div>
                         <div class="inline-controls">
                             <button type="submit" class="btn btn-success" id="saveMovieEditBtn">💾 Save changes</button>
@@ -115,8 +131,11 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="relMovie">เลือก Movie</label>
-                            <select id="relMovie" class="form-control" required></select>
+                            <label for="relMovieSearch">เลือก Movie จากโปสเตอร์</label>
+                            <input type="hidden" id="relMovie" required>
+                            <input type="text" id="relMovieSearch" class="form-control" placeholder="ค้นหาจากชื่อหนังหรือ genre">
+                            <div class="selection-summary" id="relMovieSelectedSummary">ยังไม่ได้เลือก Movie</div>
+                            <div class="poster-select-grid" id="relMoviePicker"></div>
                         </div>
                         <button type="submit" class="btn btn-success btn-block">🔗 สร้างความสัมพันธ์</button>
                     </form>
@@ -149,8 +168,11 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="editRelMovie">Movie</label>
-                            <select id="editRelMovie" class="form-control"></select>
+                            <label for="editRelMovieSearch">Movie</label>
+                            <input type="hidden" id="editRelMovie">
+                            <input type="text" id="editRelMovieSearch" class="form-control" placeholder="ค้นหาจากชื่อหนังหรือ genre">
+                            <div class="selection-summary" id="editRelMovieSelectedSummary">ยังไม่ได้เลือก Movie</div>
+                            <div class="poster-select-grid compact" id="editRelMoviePicker"></div>
                         </div>
                         <div class="inline-controls">
                             <button type="submit" class="btn btn-success" id="saveRelEditBtn">💾 Save changes</button>
@@ -158,7 +180,7 @@
                         </div>
                     </form>
                     <div class="section-note">
-                        ถ้า backend ไม่มี endpoint update relationship ระบบจะใช้ลบรายการเดิมแล้วสร้างรายการใหม่ให้อัตโนมัติ
+                        ถ้า backend บาง endpoint ไม่รองรับการ update relationship ระบบจะ fallback เป็นลบรายการเดิมแล้วสร้างใหม่ให้อัตโนมัติ
                     </div>
                 </div>
             </div>
