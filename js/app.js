@@ -1,53 +1,109 @@
-document.addEventListener("DOMContentLoaded", () => {
-    
-    // 1. Navbar Scroll Effect
-    const navbar = document.getElementById("navbar");
-    window.addEventListener("scroll", () => {
-        if (window.scrollY > 50) {
-            navbar.classList.add("scrolled");
-        } else {
-            navbar.classList.remove("scrolled");
-        }
-    });
-
-    // 2. Carousel Horizontal Scroll Logic
-    const leftArrows = document.querySelectorAll('.left-arrow');
-    const rightArrows = document.querySelectorAll('.right-arrow');
-
-    leftArrows.forEach(arrow => {
-        arrow.addEventListener('click', () => {
-            const row = arrow.nextElementSibling;
-            row.scrollBy({ left: -window.innerWidth / 2, behavior: 'smooth' });
-        });
-    });
-
-    rightArrows.forEach(arrow => {
-        arrow.addEventListener('click', () => {
-            const row = arrow.previousElementSibling;
-            row.scrollBy({ left: window.innerWidth / 2, behavior: 'smooth' });
-        });
-    });
-
-    // Close modal if clicked outside of content
-    const modal = document.getElementById('movieModal');
-    if(modal) {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal();
-            }
-        });
+const MovieRecUI = (() => {
+    function esc(text) {
+        if (text === null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
     }
-});
 
-// Modal Controls
-function openModal() {
-    const modal = document.getElementById('movieModal');
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden'; // prevent bg scrolling
-}
+    function escJs(text) {
+        if (text === null || text === undefined) return '';
+        return String(text).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
 
-function closeModal() {
-    const modal = document.getElementById('movieModal');
-    modal.classList.remove('active');
-    document.body.style.overflow = 'auto';
-}
+    function toast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const icons = {
+            success: '✅',
+            error: '❌',
+            info: 'ℹ️',
+            warning: '⚠️'
+        };
+
+        const node = document.createElement('div');
+        node.className = `toast toast-${type}`;
+        node.innerHTML = `<span>${icons[type] || icons.info}</span><span>${esc(message)}</span>`;
+        container.appendChild(node);
+        setTimeout(() => node.remove(), 3200);
+    }
+
+    function toggleMenu() {
+        const navLinks = document.getElementById('navLinks');
+        if (navLinks) navLinks.classList.toggle('open');
+    }
+
+    function debounce(fn, wait = 250) {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn(...args), wait);
+        };
+    }
+
+    function setConnectionBadge(targetId, status) {
+        const el = document.getElementById(targetId);
+        if (!el) return;
+
+        const state = status?.ok ? 'online' : 'offline';
+        const label = status?.label || (status?.ok ? 'Connected' : 'Disconnected');
+        el.className = `connection-badge ${state}`;
+        el.innerHTML = `<span class="dot"></span><span>${esc(label)}</span>`;
+    }
+
+    async function refreshConnectionStatus() {
+        if (typeof testConnection !== 'function') return;
+
+        const targets = document.querySelectorAll('[data-connection-badge]');
+        if (!targets.length) return;
+
+        try {
+            const ok = await testConnection();
+            targets.forEach((target) => {
+                setConnectionBadge(target.id, {
+                    ok,
+                    label: ok ? 'API + Graph DB connected' : 'API unavailable'
+                });
+            });
+        } catch (error) {
+            targets.forEach((target) => {
+                setConnectionBadge(target.id, {
+                    ok: false,
+                    label: 'Connection check failed'
+                });
+            });
+        }
+    }
+
+    function setupNavbarEffects() {
+        const navbar = document.getElementById('navbar');
+        if (!navbar) return;
+
+        const syncScrollState = () => {
+            navbar.classList.toggle('scrolled', window.scrollY > 40);
+        };
+
+        syncScrollState();
+        window.addEventListener('scroll', syncScrollState);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setupNavbarEffects();
+        refreshConnectionStatus();
+    });
+
+    return {
+        esc,
+        escJs,
+        toast,
+        toggleMenu,
+        debounce,
+        setConnectionBadge,
+        refreshConnectionStatus
+    };
+})();
+
+window.MovieRecUI = MovieRecUI;
+window.showToast = MovieRecUI.toast;
+window.toggleMenu = MovieRecUI.toggleMenu;

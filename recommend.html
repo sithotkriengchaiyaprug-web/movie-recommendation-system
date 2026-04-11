@@ -4,13 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📊 Recommend - MovieRec</title>
+    <title>Recommend - MovieRec</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="navbar-inner">
             <a href="index.html" class="navbar-brand"><span>🎬</span> MovieRec</a>
             <button class="menu-toggle" onclick="toggleMenu()">☰</button>
@@ -26,44 +25,62 @@
     <main class="container">
         <div class="page-header">
             <h1>📊 Movie Recommendation</h1>
-            <p>เลือก User แล้วกดแนะนำ — ระบบจะวิเคราะห์จาก Graph Database</p>
+            <p>เลือก user แล้วให้ระบบอธิบายทั้งผลลัพธ์และเหตุผลที่แนะนำ เพื่อใช้พรีเซนต์การทำงานของ Graph Database ได้ชัดขึ้น</p>
         </div>
 
-        <!-- Controls -->
-        <div class="card">
-            <div class="card-header">
-                <h2>🎯 เลือก User & วิธีแนะนำ</h2>
+        <div class="toolbar" style="margin-bottom:1rem;">
+            <div class="connection-badge offline" id="recommendConnectionBadge" data-connection-badge>
+                <span class="dot"></span><span>Checking connection...</span>
             </div>
-            <div class="card-body">
-                <div style="display:flex; gap:1rem; align-items:end; flex-wrap:wrap;">
-                    <div class="form-group" style="flex:1; min-width:200px; margin-bottom:0;">
-                        <label for="recUser">👤 เลือก User</label>
-                        <select id="recUser" class="form-control">
-                            <option value="">-- เลือก User --</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="flex:1; min-width:200px; margin-bottom:0;">
-                        <label for="recMethod">🧠 วิธีแนะนำ</label>
-                        <select id="recMethod" class="form-control">
-                            <option value="collaborative">👥 Collaborative Filtering</option>
-                            <option value="genre">🎭 แนะนำจาก Genre</option>
-                            <option value="popular">🔥 หนังยอดนิยม</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary btn-lg" id="recBtn">📊 แนะนำเลย!</button>
-                </div>
+            <button class="btn btn-outline btn-sm" id="refreshRecommendBtn">🔄 Reload users</button>
+        </div>
 
-                <div class="method-info">
-                    <strong>💡 วิธีการทำงาน:</strong><br>
-                    <strong>👥 Collaborative:</strong> หา User ที่ชอบหนังเหมือนกัน →
-                    แนะนำหนังที่เขาชอบแต่คุณยังไม่ดู<br>
-                    <strong>🎭 Genre:</strong> ดูว่าคุณชอบ Genre อะไร → แนะนำหนัง Genre เดียวกัน<br>
-                    <strong>🔥 Popular:</strong> แนะนำหนังที่คนชอบเยอะที่สุด ที่คุณยังไม่ดู
+        <div class="split-panel">
+            <div class="card">
+                <div class="card-header">
+                    <h2>🎯 เลือก User และวิธีแนะนำ</h2>
+                </div>
+                <div class="card-body">
+                    <div style="display:flex; gap:1rem; align-items:end; flex-wrap:wrap;">
+                        <div class="form-group" style="flex:1; min-width:220px; margin-bottom:0;">
+                            <label for="recUser">เลือก User</label>
+                            <select id="recUser" class="form-control">
+                                <option value="">-- เลือก User --</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1; min-width:220px; margin-bottom:0;">
+                            <label for="recMethod">วิธีแนะนำ</label>
+                            <select id="recMethod" class="form-control">
+                                <option value="collaborative">👥 Collaborative Filtering</option>
+                                <option value="genre">🎭 Genre-Based</option>
+                                <option value="popular">🔥 Popular</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary btn-lg" id="recBtn">📊 แนะนำเลย</button>
+                    </div>
+
+                    <div class="method-info">
+                        <strong>Collaborative:</strong> หา user ที่ชอบหนังคล้ายกันแล้วดูว่าเขาชอบอะไรเพิ่ม<br>
+                        <strong>Genre:</strong> ดูจาก genre ของหนังที่ user กดชอบไว้แล้วขยายไปเรื่องที่คล้ายกัน<br>
+                        <strong>Popular:</strong> ดูหนังที่ได้รับความนิยมโดยรวมและ user ยังไม่เคยดู
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>🧠 Recommendation lens</h2>
+                </div>
+                <div class="card-body" id="recommendSummary">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🕸️</div>
+                        <h3>รอเลือก User</h3>
+                        <p>เมื่อเลือก user แล้ว ส่วนนี้จะสรุปประวัติ ความชอบ และแนวทางที่ระบบจะใช้ในการแนะนำ</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- User Profile -->
         <div class="card" style="margin-top:1.5rem; display:none;" id="userProfileCard">
             <div class="card-header">
                 <h2>👤 โปรไฟล์ User</h2>
@@ -71,7 +88,6 @@
             <div class="card-body" id="userProfile"></div>
         </div>
 
-        <!-- Results -->
         <div class="card" style="margin-top:1.5rem; display:none;" id="resultsCard">
             <div class="card-header">
                 <h2>🎬 ผลลัพธ์การแนะนำ</h2>
@@ -84,6 +100,7 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
     <script src="js/recommend.js"></script>
 </body>
 

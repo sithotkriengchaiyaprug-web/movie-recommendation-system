@@ -4,13 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>👤 Users - MovieRec</title>
+    <title>Users - MovieRec</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="navbar-inner">
             <a href="index.html" class="navbar-brand"><span>🎬</span> MovieRec</a>
             <button class="menu-toggle" onclick="toggleMenu()">☰</button>
@@ -26,11 +25,18 @@
     <main class="container">
         <div class="page-header">
             <h1>👤 จัดการ Users</h1>
-            <p>เพิ่ม ลบ และดูรายชื่อผู้ใช้ทั้งหมดในระบบ</p>
+            <p>เพิ่ม แก้ไข ค้นหา และลบผู้ใช้ พร้อมดูว่าใครมีประวัติการดูหนังหรือกดชอบแล้วบ้าง</p>
+        </div>
+
+        <div class="toolbar" style="margin-bottom:1rem;">
+            <div class="connection-badge offline" id="usersConnectionBadge" data-connection-badge>
+                <span class="dot"></span><span>Checking connection...</span>
+            </div>
+            <button class="btn btn-outline btn-sm" id="refreshUsersBtn">🔄 Reload users</button>
+            <button class="btn btn-outline btn-sm" id="seedUsersDemoBtn">🎲 Add sample users</button>
         </div>
 
         <div class="grid-2">
-            <!-- Add User Form -->
             <div class="card">
                 <div class="card-header">
                     <h2>➕ เพิ่ม User ใหม่</h2>
@@ -39,62 +45,89 @@
                     <form id="addUserForm">
                         <div class="form-group">
                             <label for="userName">ชื่อ User</label>
-                            <input type="text" id="userName" class="form-control"
-                                placeholder="เช่น John, Alice, สมชาย..." required autocomplete="off">
+                            <input type="text" id="userName" class="form-control" placeholder="เช่น John, Alice, สมชาย" required autocomplete="off">
                         </div>
                         <div class="form-group">
-                            <label for="userAge">อายุ (ไม่บังคับ)</label>
-                            <input type="number" id="userAge" class="form-control" placeholder="เช่น 25" min="1"
-                                max="120">
+                            <label for="userAge">อายุ</label>
+                            <input type="number" id="userAge" class="form-control" placeholder="เช่น 25" min="1" max="120">
                         </div>
-                        <button type="submit" class="btn btn-primary btn-block" id="addUserBtn">
-                            ➕ เพิ่ม User
-                        </button>
+                        <button type="submit" class="btn btn-primary btn-block" id="addUserBtn">➕ เพิ่ม User</button>
                     </form>
-
-                    <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border);">
-                        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">
-                            ⚡ เพิ่มข้อมูลตัวอย่าง:
-                        </p>
-                        <button class="btn btn-outline btn-sm" id="sampleUsersBtn">
-                            🎲 เพิ่ม Sample Users (5 คน)
-                        </button>
-                    </div>
                 </div>
             </div>
 
-            <!-- Stats & Danger Zone -->
             <div class="card">
                 <div class="card-header">
-                    <h2>📊 สถิติ Users</h2>
-                    <button class="btn btn-sm btn-outline" id="refreshUsersBtn">🔄 Refresh</button>
+                    <h2>✏️ แก้ไข User</h2>
                 </div>
                 <div class="card-body">
-                    <div class="grid-2" style="gap:1rem; margin-bottom:1.5rem;">
-                        <div class="stat-card" style="padding:1rem;">
-                            <div class="stat-number" id="userCount">-</div>
-                            <div class="stat-label">Users ทั้งหมด</div>
+                    <form id="editUserForm">
+                        <div class="form-group">
+                            <label for="editUserOriginalName">User ที่เลือก</label>
+                            <input type="text" id="editUserOriginalName" class="form-control" readonly placeholder="เลือกจากรายการด้านล่าง">
                         </div>
-                        <div class="stat-card" style="padding:1rem;">
-                            <div class="stat-number" id="activeUsers">-</div>
-                            <div class="stat-label">มีความสัมพันธ์</div>
+                        <div class="form-group">
+                            <label for="editUserName">ชื่อใหม่</label>
+                            <input type="text" id="editUserName" class="form-control" placeholder="ชื่อ user ที่ต้องการแก้ไข">
                         </div>
-                    </div>
-                    <div class="danger-zone">
-                        <p>⚠️ Danger Zone</p>
-                        <button class="btn btn-danger btn-sm" id="deleteAllUsersBtn">
-                            🗑️ ลบ Users ทั้งหมด
-                        </button>
+                        <div class="form-group">
+                            <label for="editUserAge">อายุใหม่</label>
+                            <input type="number" id="editUserAge" class="form-control" min="1" max="120" placeholder="อายุใหม่">
+                        </div>
+                        <div class="inline-controls">
+                            <button type="submit" class="btn btn-success" id="saveUserEditBtn">💾 Save changes</button>
+                            <button type="button" class="btn btn-outline" id="cancelUserEditBtn">ยกเลิก</button>
+                        </div>
+                    </form>
+                    <div class="section-note">
+                        ถ้า backend รองรับ `PUT/PATCH` ระบบจะอัปเดตตรง ๆ ผ่าน API เดิมทันที
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- User List -->
+        <div class="grid-2" style="margin-top:1rem;">
+            <div class="card">
+                <div class="card-header">
+                    <h2>📊 สถิติ Users</h2>
+                </div>
+                <div class="card-body">
+                    <div class="grid-2" style="gap:1rem;">
+                        <div class="stat-card">
+                            <div class="stat-number" id="userCount">0</div>
+                            <div class="stat-label">Users ทั้งหมด</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="activeUsers">0</div>
+                            <div class="stat-label">Active users</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>⚠️ Demo controls</h2>
+                </div>
+                <div class="card-body">
+                    <div class="inline-controls">
+                        <button class="btn btn-outline btn-sm" id="searchClearBtn">Clear search</button>
+                        <button class="btn btn-danger btn-sm" id="deleteAllUsersBtn">🗑️ ลบ Users ทั้งหมด</button>
+                    </div>
+                    <div class="section-note">
+                        ใช้ปุ่ม sample, reload และ delete all เพื่อเตรียมหน้าสำหรับเดโมได้เร็วขึ้น
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card" style="margin-top:1.5rem;">
             <div class="card-header">
-                <h2>📋 รายชื่อ Users ทั้งหมด</h2>
-                <span class="badge badge-primary" id="userCountBadge">0 คน</span>
+                <h2>📋 รายชื่อ Users</h2>
+                <div class="toolbar" style="margin:0;">
+                    <input type="text" id="userSearchInput" class="form-control search-input" placeholder="ค้นหาชื่อ user">
+                    <span class="badge badge-primary" id="userCountBadge">0 คน</span>
+                </div>
             </div>
             <div class="card-body">
                 <div id="userList">
@@ -110,6 +143,7 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
     <script src="js/users.js"></script>
 </body>
 
